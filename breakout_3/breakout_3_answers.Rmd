@@ -7,33 +7,39 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(safetyData)
 ```
 
 ## Summarizing Data
 
-We're going to prepare and summarize some of the data from the DM.
+We're going to prepare and summarize data from the DM dataset. 
 
 ```{r load_data}
-dm <- safetyData::stdm_dm
+dm <- safetyData::sdtm_dm
 ```
 
 To prepare the data we need to do the following:
+
 1) Update USUBJID to the following pattern. <STUDYID>-<SITEID>-<SUBJID>
+
 2) Derive the safety population flag(SAFFL) to be "N" for the Screen Failures, and "Y" for all others
+
 3) Derive the age group(AGEGR1) into the following groups: <65, 65-80, >80
 
 
 #### Prepare USUBJID
 
-We already have USUBJID but we need it in a new format.
+We already have USUBJID but we need it in a new format. Below use the `dplyr::mutate` function to update USUBJDID to this format <*STUDYID*>-<*SITEID*>-<*SUBJID*>. **Hint: The `paste0` function can be used to concatenate strings.**
 
 ```{r prep_usubjid}
 dm <- dm %>%
   mutate(USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID))
 ```
 
-
 #### Prepare SAFFL
+
+We can use the same `mutate` function to create the SAFFL variable. SAFFL should be "N" if the participant was screened out, and "Y" otherwise. **Hint: The `if_else` function can be used in a `mutate`.
 
 ```{r prep_saffl}
 dm <- dm %>%
@@ -46,6 +52,8 @@ dm <- dm %>%
 
 #### Prepare AGEGR1
 
+This is similar to the SAFFL logic except there are multiple conditions we must test for. The AGEGR1 variable will group the age of participants into less than 65(<65), 65 to 80(65-80), and greater than 80(>80). **Hint: Nesting `if_else` functions would work here, however the `case_when` function would be more appropriate. 
+
 ```{r prep_agegr1}
 dm <- dm %>%
   mutate(
@@ -53,22 +61,52 @@ dm <- dm %>%
       AGE < 65 ~ "<65",
       AGE <= 80 ~ "65-80",
       AGE > 80 ~ ">80",
-      # Add this in as a failsafe
-      TRUE ~ stop("Invalid Age")
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+### All together
+
+We did each step one by one above, however with the pipe(`%>%`) we can write one workflow so make our code more readable.
+
+```{r all}
+dm <- safetyData::sdtm_dm %>%
+  mutate(
+    USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID),
+    SAFFL = if_else(ARM == "Screen Failure",
+                    "N",
+                    "Y"),
+    
+    AGEGR1 = case_when(
+      AGE < 65 ~ "<65",
+      AGE <= 80 ~ "65-80",
+      AGE > 80 ~ ">80",
+      TRUE ~ NA_character_
     )
   )
 ```
 
 ### Summarizing Data
 
+Now that the data is prepared, we can summarize our data in a few ways. With the `group_by()` function we can note the groupings of the summary, and the `summarise` function will contain the logic for the values.
+
 We need to:
-1) Summarize age(AGE), (mean, sd, min, max, IQR) across treatment groups(ARM)
-2) Count age groups(AGEGR1) across treatment groups(ARM)
+
+1) Summarize (mean, sd, min, max, IQR) age(AGE), across treatment groups(ARM)
+
+2) Count participants age groups(AGEGR1) across treatment groups(ARM)
+
+3) Count participants across treatment groups(ARM) and sites(SITEID)
+
+#### Age Summary
+
+We need to calculate summary statistics around age(AGE) for each treatment group(ARM). Using the `group_by` function and the `summarise` function, find the mean, standard deviation, minimum, maximum, and interquartile range of the ages in the dataset.
 
 ```{r sum_age}
-dm <- dm %>%
+dm %>%
   group_by(ARM) %>%
-  summarize(
+  summarise(
     mean = mean(AGE),
     sd = sd(AGE),
     min = min(AGE),
@@ -80,11 +118,17 @@ dm <- dm %>%
   ungroup()
 ```
 
+#### Age Group Counts
+
+Now that we have the summary data for the ages, we also want to get the counts of each age group for each treatment group. **Hint: `group_by()` can take more than one variable.
+
 ```{r sum_agegr}
-dm <- dm %>%
-  group_by(ARM) %>%
-  summarize(
+dm %>%
+  group_by(ARM, AGEGR1) %>%
+  summarise(
     n = n()
   ) %>%
   ungroup()
 ```
+
+
