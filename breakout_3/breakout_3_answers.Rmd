@@ -1,0 +1,90 @@
+---
+title: "Breakout 3: Summarizing Data"
+author: "Eli Miller"
+date: "6/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summarizing Data
+
+We're going to prepare and summarize some of the data from the DM.
+
+```{r load_data}
+dm <- safetyData::stdm_dm
+```
+
+To prepare the data we need to do the following:
+1) Update USUBJID to the following pattern. <STUDYID>-<SITEID>-<SUBJID>
+2) Derive the safety population flag(SAFFL) to be "N" for the Screen Failures, and "Y" for all others
+3) Derive the age group(AGEGR1) into the following groups: <65, 65-80, >80
+
+
+#### Prepare USUBJID
+
+We already have USUBJID but we need it in a new format.
+
+```{r prep_usubjid}
+dm <- dm %>%
+  mutate(USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID))
+```
+
+
+#### Prepare SAFFL
+
+```{r prep_saffl}
+dm <- dm %>%
+  mutate(
+    SAFFL = if_else(ARM == "Screen Failure",
+                    "N",
+                    "Y")
+  )
+```
+
+#### Prepare AGEGR1
+
+```{r prep_agegr1}
+dm <- dm %>%
+  mutate(
+    AGEGR1 = case_when(
+      AGE < 65 ~ "<65",
+      AGE <= 80 ~ "65-80",
+      AGE > 80 ~ ">80",
+      # Add this in as a failsafe
+      TRUE ~ stop("Invalid Age")
+    )
+  )
+```
+
+### Summarizing Data
+
+We need to:
+1) Summarize age(AGE), (mean, sd, min, max, IQR) across treatment groups(ARM)
+2) Count age groups(AGEGR1) across treatment groups(ARM)
+
+```{r sum_age}
+dm <- dm %>%
+  group_by(ARM) %>%
+  summarize(
+    mean = mean(AGE),
+    sd = sd(AGE),
+    min = min(AGE),
+    max = max(AGE),
+    IQR = IQR(AGE)
+  ) %>%
+  # This won't change the data, but is best practice because grouped tibbles can
+  # behave differently than regular tibbles.
+  ungroup()
+```
+
+```{r sum_agegr}
+dm <- dm %>%
+  group_by(ARM) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ungroup()
+```
