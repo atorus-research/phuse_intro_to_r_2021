@@ -1,0 +1,113 @@
+---
+title: "Intro to R Demo"
+subtitle: "PHUSE US Connect 2021: Introduction to R for the Statistical Programmer"
+author: "Mike Stackhouse"
+date: "6/9/2021"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+library(knitr)
+library(Tplyr)
+library(pharmaRTF)
+```
+
+## Prep Some Data! 
+
+First, let's import some data and derive some variables.
+
+```{r data_prep}
+# Use haven to read the raw data straight off of GitHub!
+raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
+
+dm <- raw_dm %>%
+  mutate(
+    # Create USUBJID by concatenating STUDYID, SITEID, and SUBJID
+    USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID),
+    # Safety Flag is "Y" if ARM is not Screen Failure
+    SAFFL = if_else(ARM != "Screen Failure",
+                    "Y",
+                    "N"),
+    # if/else if/else flow in R
+    AGEGR1 = case_when(
+      AGE < 65 ~ "<65",
+      AGE <= 80 ~ "65-80",
+      AGE > 80 ~ ">80",
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+## Summarize it! 
+
+Next - let's use Tplyr to summarize our data! 
+
+```{r Tplyr}
+t <- tplyr_table(dm, ARM, where = SAFFL == "Y") %>% 
+  add_layer(
+    group_desc(AGE, by = "Age (Years)")
+  ) %>% 
+  add_layer(
+    group_count(AGEGR1, by = "Age Group")
+  ) 
+
+dat <- t %>% 
+  build() %>% 
+  apply_row_masks(row_breaks = TRUE) %>% 
+  select(starts_with('row'), var1_Placebo, `var1_Xanomeline Low Dose`, `var1_Xanomeline High Dose`) %>% 
+  add_column_headers(
+    paste0(" | | Placebo\\line(N=**Placebo**)| Xanomeline Low Dose\\line(N=**Xanomeline Low Dose**)",
+             "|Xanomeline High Dose\\line(N=**Xanomeline High Dose**)"),
+    header_n = header_n(t)
+  )
+  
+
+kable(dat)
+```
+
+## Style it! 
+
+Perfect. Style? Yes please. 
+
+```{r style}
+ht <- huxtable::as_hux(dat, add_colnames=FALSE) %>% # `add_colnames` is FALSE because we already added our own
+   huxtable::set_bold(1, 1:ncol(dat), TRUE) %>% # Bold the header row
+   huxtable::set_align(1, 3:ncol(dat), 'center') %>% # Center align the results headers
+   huxtable::set_align(2:nrow(dat), 3:ncol(dat), 'center') %>% # Center align the results
+   huxtable::set_valign(1, 1:ncol(dat), 'bottom') %>% # Bottom align the header row
+   huxtable::set_bottom_border(1, 1:ncol(dat), 1) %>% # Put a border under the header row
+   huxtable::set_top_border(1, 1:ncol(dat), 1) %>% # Put a border above the header row
+   huxtable::set_width(1.5) %>% # Set the table width
+   huxtable::set_escape_contents(FALSE) %>% # Don't escape RTF syntax
+   huxtable::set_col_width(c(.19, .27, .18, .18, .18))
+
+print(ht)
+```
+
+## RTF it! 
+
+```{r rtf}
+doc <- rtf_doc(ht, header_rows=1) %>%
+   # This gets our rows nice and close together - find more info in the docs
+   set_ignore_cell_padding(TRUE) %>% 
+   set_font_size(9) %>% 
+   # Add in a title
+   add_titles(
+      hf_line("Demographic Summary", bold=TRUE, align = 'left', font_size = 11),
+      hf_line("Safety Population", bold=TRUE, align = 'left', font_size = 11)
+   ) %>% 
+   # Add some footnotes
+   add_footnotes(
+      hf_line(paste0("Abbreviations:  N = number of subjects in the population; Q1=25th Percentile;", 
+                     " Q3= 75th Percentile; SD=Standard Deviation."), bold = TRUE, align='left'),
+      hf_line("Number of subjects with non-missing data, used as the denominator.", bold = TRUE, align='left')
+   )
+
+# Now we can write out the RTF file! 
+write_rtf(doc, file.path("demog1.rtf"))
+```
