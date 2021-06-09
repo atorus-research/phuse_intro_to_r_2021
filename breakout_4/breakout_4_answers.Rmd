@@ -12,6 +12,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(haven)
+library(knitr)
 ```
 
 ## Intro
@@ -38,7 +39,13 @@ dm <- raw_dm %>%
       AGE > 80 ~ ">80",
       TRUE ~ NA_character_
     )
-  ) 
+  )
+
+dm %>% 
+  select(USUBJID, STUDYID, SITEID, SUBJID, ARM, SAFFL, AGE, AGEGR1) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
 ```
 
 Now that our data is prepared, we can summarize our data in a few ways. With the `group_by()` function we can specify how we'd like to group our summaries (like any `by` statement in SAS), and the `summarize()` function will control which summaries are performed.
@@ -67,7 +74,9 @@ dm %>%
     sd = sd(AGE),
     min = min(AGE),
     max = max(AGE)
-  )
+  ) %>% 
+  # We're using the `kable()` function to view the data nicely
+  kable()
 ```
 
 ## Age Group Counts
@@ -85,14 +94,18 @@ For this assignment:
 ## Using summarize
 dm %>% 
   group_by(ARM, AGEGR1) %>% 
-  summarize(n = n(), .groups='drop_last')
+  summarize(n = n(), .groups='drop_last') %>% 
+  # We're using the `kable()` function to view the data nicely
+  kable()
 
 ## Using group_by and count
 dm %>%
   group_by(ARM) %>% 
-  count(AGEGR1)
+  count(AGEGR1) %>% 
+  kable()
 
 ## Using count alone
 dm %>% 
-  count(ARM, AGEGR1)
+  count(ARM, AGEGR1) %>% 
+  kable()
 ```
