@@ -4,7 +4,7 @@
     "Repositories": [
       {
         "Name": "CRAN",
-        "URL": "https://atorus-rspm.eastus2.cloudapp.azure.com/cran-mirror/latest"
+        "URL": "https://cran.rstudio.com"
       }
     ]
   },
