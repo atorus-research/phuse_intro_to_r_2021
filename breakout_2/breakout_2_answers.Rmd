@@ -6,12 +6,29 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+library(knitr)
 ```
 
-## Types of Joins
+## Intro
+
+We're going to work with some data from the DM dataset.
+
+```{r load_data}
+# Use haven to read the raw data straight off of GitHub!
+raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
+```
 
 ## Inner Join
+In this section we will be exploring how to do an inner join.  
 
 ## Left Join
+In this section we will be exploring how to do a left join. 
 
 ## Compare
+Now that we've done both and inner and left join, let's look at what the data created through that process does.
+
+
+
+
