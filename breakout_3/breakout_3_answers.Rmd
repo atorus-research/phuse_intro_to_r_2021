@@ -1,61 +1,94 @@
 ---
-title: "Breakout 3: Summarizing Data"
+title: "Breakout 3: Deriving New Variables"
 author: "Eli Miller"
 date: "6/8/2021"
-output: html_document
+output:
+  rmarkdown::html_document:
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(dplyr)
-library(safetyData)
+library(tidyverse)
+library(haven)
+library(knitr)
 ```
 
-## Summarizing Data
+## Intro
 
-We're going to prepare and summarize data from the DM dataset. 
+We're going to prepare and summarize data from the DM dataset.
 
 ```{r load_data}
-dm <- safetyData::sdtm_dm
+# Use haven to read the raw data straight off of GitHub!
+raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
 ```
 
 To prepare the data we need to do the following:
 
-1) Update USUBJID to the following pattern. <STUDYID>-<SITEID>-<SUBJID>
+1)  Update USUBJID to the following pattern.
 
-2) Derive the safety population flag(SAFFL) to be "N" for the Screen Failures, and "Y" for all others
+  ```
+  <STUDYID>-<SITEID>-<SUBJID>
+  ```
 
-3) Derive the age group(AGEGR1) into the following groups: <65, 65-80, >80
+2)  Derive the safety population flag (SAFFL) as "N" for the Screen Failures, and "Y" for all others
 
+3)  Derive the age group (AGEGR1) variable using the following groups:
 
-#### Prepare USUBJID
+-   \<65
+-   65-80
+-   \>80
 
-We already have USUBJID but we need it in a new format. Below use the `dplyr::mutate` function to update USUBJDID to this format <*STUDYID*>-<*SITEID*>-<*SUBJID*>. **Hint: The `paste0` function can be used to concatenate strings.**
+## Prepare USUBJID
+
+We already have USUBJID in our data but, we for this example we're going to put it in a new format.
+
+**Use the `mutate()` function from the `{dplyr}` package to update USUBJID in this format:**
+
+    <*STUDYID*>-<*SITEID*>-<*SUBJID*>. 
+
+*Hint: The `paste0` function can be used to concatenate strings.*
 
 ```{r prep_usubjid}
-dm <- dm %>%
-  mutate(USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID))
+raw_dm %>%
+  mutate(USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID)) %>% 
+  select(STUDYID, SITEID, SUBJID, USUBJID) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
 ```
 
-#### Prepare SAFFL
+## Prepare SAFFL
 
-We can use the same `mutate` function to create the SAFFL variable. SAFFL should be "N" if the participant was screened out, and "Y" otherwise. **Hint: The `if_else` function can be used in a `mutate`.
+We can use the same `mutate()` function to create the SAFFL variable. SAFFL should be "N" if the participant was a screen failure, and "Y" otherwise.
+
+**Derive SAFFL using the logic described above.**
+
+*Hint: The `if_else()` function can be used in a `mutate()`.*
 
 ```{r prep_saffl}
-dm <- dm %>%
+raw_dm %>%
   mutate(
-    SAFFL = if_else(ARM == "Screen Failure",
-                    "N",
-                    "Y")
-  )
+    SAFFL = if_else(ARM != "Screen Failure",
+                    "Y",
+                    "N")
+  ) %>% 
+  select(USUBJID, ARM, SAFFL) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head(10) %>% 
+  kable()
 ```
 
-#### Prepare AGEGR1
+## Prepare AGEGR1
 
-This is similar to the SAFFL logic except there are multiple conditions we must test for. The AGEGR1 variable will group the age of participants into less than 65(<65), 65 to 80(65-80), and greater than 80(>80). **Hint: Nesting `if_else` functions would work here, however the `case_when` function would be more appropriate. 
+This is similar to the SAFFL logic except that there are multiple conditions for which we must test. The AGEGR1 variable will group the age of participants into less than 65 (\<65), 65 to 80 (65-80), and greater than 80 (\>80).
+
+**Derive AGEGR1 using the logic described above.**
+
+*Hint: Nesting `if_else` functions would work here - but it would be pretty ugly, The `case_when` function would be more appropriate.*
 
 ```{r prep_agegr1}
-dm <- dm %>%
+raw_dm %>%
   mutate(
     AGEGR1 = case_when(
       AGE < 65 ~ "<65",
@@ -63,15 +96,19 @@ dm <- dm %>%
       AGE > 80 ~ ">80",
       TRUE ~ NA_character_
     )
-  )
+  ) %>% 
+  select(USUBJID, AGE, AGEGR1) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
 ```
 
-### All together
+## All together
 
-We did each step one by one above, however with the pipe(`%>%`) we can write one workflow so make our code more readable.
+We did each variable derivation one by one in the examples above - but `mutate()` can take multiple variable derivations in one call! Tie it all together into one call to `mutate()`.
 
 ```{r all}
-dm <- safetyData::sdtm_dm %>%
+dm <- raw_dm %>%
   mutate(
     USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID),
     SAFFL = if_else(ARM == "Screen Failure",
@@ -84,51 +121,12 @@ dm <- safetyData::sdtm_dm %>%
       AGE > 80 ~ ">80",
       TRUE ~ NA_character_
     )
-  )
+  ) 
+
+# Now that the data are stored in a variable, we'll print to view it
+dm %>% 
+  select(USUBJID, STUDYID, SITEID, SUBJID, ARM, SAFFL, AGE, AGEGR1) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
 ```
-
-### Summarizing Data
-
-Now that the data is prepared, we can summarize our data in a few ways. With the `group_by()` function we can note the groupings of the summary, and the `summarise` function will contain the logic for the values.
-
-We need to:
-
-1) Summarize (mean, sd, min, max, IQR) age(AGE), across treatment groups(ARM)
-
-2) Count participants age groups(AGEGR1) across treatment groups(ARM)
-
-3) Count participants across treatment groups(ARM) and sites(SITEID)
-
-#### Age Summary
-
-We need to calculate summary statistics around age(AGE) for each treatment group(ARM). Using the `group_by` function and the `summarise` function, find the mean, standard deviation, minimum, maximum, and interquartile range of the ages in the dataset.
-
-```{r sum_age}
-dm %>%
-  group_by(ARM) %>%
-  summarise(
-    mean = mean(AGE),
-    sd = sd(AGE),
-    min = min(AGE),
-    max = max(AGE),
-    IQR = IQR(AGE)
-  ) %>%
-  # This won't change the data, but is best practice because grouped tibbles can
-  # behave differently than regular tibbles.
-  ungroup()
-```
-
-#### Age Group Counts
-
-Now that we have the summary data for the ages, we also want to get the counts of each age group for each treatment group. **Hint: `group_by()` can take more than one variable.
-
-```{r sum_agegr}
-dm %>%
-  group_by(ARM, AGEGR1) %>%
-  summarise(
-    n = n()
-  ) %>%
-  ungroup()
-```
-
-
