@@ -19,7 +19,7 @@ library(knitr)
 
 To get things started with this breakout, let's pick up where we left off from breakout 3!
 
-```{r}
+```{r data_prep} 
 # Use haven to read the raw data straight off of GitHub!
 raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
 
