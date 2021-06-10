@@ -1,7 +1,10 @@
 ---
-title: "breakout_2_answers"
+title: "Breakout 2: Combining Data Frames"
+subtitle: "PHUSE US Connect 2021: Introduction to R for the Statistical Programmer"
 author: "Atorus Research"
-output: html_document
+output:
+  rmarkdown::html_document:
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
@@ -18,17 +21,58 @@ We're going to work with some data from the DM dataset.
 ```{r load_data}
 # Use haven to read the raw data straight off of GitHub!
 raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
+raw_ae <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/ae.xpt"))
 ```
 
+We'll pick up where we left off from the last exercise with the subsets on the data.
+
+```{r subset}
+dm <- raw_dm %>% 
+  select(USUBJID, STUDYID, SITEID, SUBJID, ARM, AGE, RFSTDTC) %>% 
+  filter(RFSTDTC != "")
+
+total_dm <- dm %>% 
+  mutate(ARM = 'Total')
+
+ae <- raw_ae %>% 
+  select(USUBJID, AESEQ, AETERM, AEBODSYS, AEDECOD, AESTDTC, AEENDTC)
+
+ae_cardiac <- ae %>% 
+  filter(AEBODSYS == 'CARDIAC DISORDERS')
+
+ae_tach <- ae %>% 
+  filter(AEDECOD == 'TACHYCARDIA')
+```
+
+## Bind Rows
+The first way we want to combine data is through stacking them.  This is done using `bind_rows()`.  We have proveded both the basic dm data frame but also a data frame called total_dm that contains all the records from dm but the ARM has been changed to Total for use during summaries where a total group is needed.  Let's combine these two datasets using `bind_rows()` and call the new dataset bind_dm
+
+```{r bindrows}
+bind_dm <- bind_rows(dm, total_dm)
+```
+
+This dataset now contains all observations and variables from the two data frames used as inputs.
+
 ## Inner Join
-In this section we will be exploring how to do an inner join.  
+Another way to combine data is by doing a join.  The first type of join we will be doing is an inner join.  This keeps the data that is found only at the intersection of the two data frames.  
+
+We have provided two data frames for this example based off the overall ae data frame.  ae_cardiac is subset on records with an AEBODSYS of 'CARDIAC DISORDERS' and ae_tach is subset on records with an AEDECOD of 'TACHYCARDIA'.  Perform an inner join on these two datasets using the variables USUBJID and AESEQ.  Assign this new data frame to ae_cardio_tach
+
+```{r innerjoin}
+ae_cardio_tach <- inner_join(ae_cardiac, ae_tach, by = c('USUBJID', 'AESEQ'))
+```
+
+Take a look at the output data frame.  Where are the columns from each of the input data frames?  Notice that any variables that are in both but not used in the `by` argument of `inner_join()` will be suffixed with a .x or .y depending on what dataframe it is from.
 
 ## Left Join
-In this section we will be exploring how to do a left join. 
+The first type of join we will be doing is a left join.  This keeps the data that is found in the 'left' dataframe and any data from the 'right' data frame that overlaps. 
 
-## Compare
-Now that we've done both and inner and left join, let's look at what the data created through that process does.
+For this example we will combine the dm and ae data frames.  dm will be our 'left' data frame and ae will be our 'right' data frame with the join being done on the USUBJID variable.  The combined dataset can be assigned to the variable dm_ae
 
+```{r leftjoin}
+dm_ae <- left_join(dm, ae, by = 'USUBJID')
+```
 
+Take a look at the output data frame.  Where are the columns from each of the input data frames?  Find subject '01-701-1033', they don't have any records from ae so they just have the variables from dm populated.
 
 
