@@ -19,7 +19,9 @@ library(pharmaRTF)
 
 ## Prep Some Data! 
 
-First, let's import some data and derive some variables.
+First, let's import some data and derive some variables. We're going to play with some data from the [PHUSE Test Data Factory project's](https://github.com/phuse-org/TestDataFactory) replication of the [CDISC Pilot Data](https://bitbucket.cdisc.org/projects/CED/repos/sdtm-adam-pilot-project/browse). This is an excellent, public source of data following the SDTM v3.2. 
+
+We're going to use the R package [{haven}](https://haven.tidyverse.org/) to read in SAS version 5 Transport files. Better yet - we're going to read it straight off of GitHub! We'll also use [{dplyr}](https://dplyr.tidyverse.org/) to pre-process our data a bit.
 
 ```{r data_prep}
 # Use haven to read the raw data straight off of GitHub!
@@ -45,7 +47,7 @@ dm <- raw_dm %>%
 
 ## Summarize it! 
 
-Next - let's use Tplyr to summarize our data! 
+Next, let's use the Atorus package [{Tplyr}](https://atorus-research.github.io/Tplyr/) to summarize our data and get is ready for display! 
 
 ```{r Tplyr}
 t <- tplyr_table(dm, ARM, where = SAFFL == "Y") %>% 
@@ -66,13 +68,12 @@ dat <- t %>%
     header_n = header_n(t)
   )
   
-
 kable(dat)
 ```
 
 ## Style it! 
 
-Perfect. Style? Yes please. 
+Starting to look like a table? Yup. Let's use the package [{huxtable}](https://hughjonesd.github.io/huxtable/) to style our table further, much like we'd do with PROC REPORT in SAS&reg;. 
 
 ```{r style}
 ht <- huxtable::as_hux(dat, add_colnames=FALSE) %>% # `add_colnames` is FALSE because we already added our own
@@ -84,12 +85,14 @@ ht <- huxtable::as_hux(dat, add_colnames=FALSE) %>% # `add_colnames` is FALSE be
    huxtable::set_top_border(1, 1:ncol(dat), 1) %>% # Put a border above the header row
    huxtable::set_width(1.5) %>% # Set the table width
    huxtable::set_escape_contents(FALSE) %>% # Don't escape RTF syntax
-   huxtable::set_col_width(c(.19, .27, .18, .18, .18))
+   huxtable::set_col_width(c(.19, .21, .2, .2, .2))
 
-print(ht)
+ht
 ```
 
 ## RTF it! 
+
+Finally, let's write the table out into RTF. To finish everything off, we're also goign to need some titles and footnotes. Here we can use another Atorus package named [{pharmaRTF}](https://atorus-research.github.io/pharmaRTF/). 
 
 ```{r rtf}
 doc <- rtf_doc(ht, header_rows=1) %>%
@@ -110,4 +113,94 @@ doc <- rtf_doc(ht, header_rows=1) %>%
 
 # Now we can write out the RTF file! 
 write_rtf(doc, file.path("demog1.rtf"))
+```
+
+## Let's try something else
+
+Ok - very good. Let's step things up a bit. How about an AE table? Let's add some extra flair as well. All we're going to do here is use a few more of the features available within {Tplyr}. 
+
+```{r ae}
+adsl <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_ADaM/adsl.xpt"))
+adae <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_ADaM/adae.xpt"))
+
+t <- tplyr_table(adae, TRTA, where=SAFFL == "Y" & TRTEMFL == "Y") %>% 
+  set_pop_data(adsl) %>% 
+  set_pop_treat_var(TRT01A) %>% 
+  set_pop_where(SAFFL == "Y") %>% 
+  add_total_group() %>% 
+  set_count_layer_formats(
+    'n_counts' = f_str('xx (xx.x%) xxx', distinct_n, distinct_pct, n)
+  ) %>% 
+  set_distinct_by(USUBJID) %>% 
+  # Add a count layer for overall subjects
+  add_layer(
+    group_count("Number of patients reporting at least one treatment-emergent adverse event")
+   ) %>%
+   # Add a nested count layer for AEBODSYS as the outer layer and AEDECOD as the inner layer
+   add_layer(
+      group_count(vars(AEBODSYS, AEDECOD)) %>% 
+         set_distinct_by(USUBJID) %>% 
+         # Create nested formatting
+         set_nest_count(TRUE) %>% 
+         # Alphabetical body system, count for terms
+         set_order_count_method(c("byfactor", "bycount")) %>%
+         # Create ordering variable from High Dose
+         set_ordering_cols("Xanomeline High Dose") %>%
+         # Use the number of subjects who had an AE as the order variable
+         set_result_order_var(distinct_n)
+   ) 
+
+dat <- t %>% 
+  build() %>% 
+  # Sort the data by layer, body system, then descending occurrence of AEs within body system
+  arrange(ord_layer_index, ord_layer_1, desc(ord_layer_2)) %>%
+  # Blank out repeating row labels and insert blank rows between layers and body system groups
+  apply_row_masks(row_breaks=TRUE, ord_layer_index, ord_layer_1) %>%
+  # Pick out columns for display
+  select(row_label1, `var1_Placebo`, `var1_Xanomeline Low Dose`,`var1_Xanomeline High Dose`, var1_Total) %>% 
+  # Add column headers to the data frame in preparation for styling with huxtable
+  add_column_headers(
+    paste0("System Organ Class \\line   Preferred Term",
+           "| Placebo \\line(N=**Placebo**) \\line n (%) [E]",
+           "| Xanomeline \\line Low Dose \\line(N=**Xanomeline Low Dose**) \\line n (%) [E]",
+           "| Xanomeline \\line High Dose \\line(N=**Xanomeline High Dose**) \\line n (%) [E]",
+           "| Total \\line(N=**Total**) \\line n (%) [E]"
+    ), header_n(t)
+  )
+
+# Style the table!
+ht <- huxtable::as_hux(dat, add_colnames=FALSE) %>% # `add_colnames` is FALSE because we already added our own
+   huxtable::set_bold(1, 1:ncol(dat), TRUE) %>% # Bold the header row
+   huxtable::set_align(1,2:ncol(dat), 'center') %>% # Center align the results header
+   huxtable::set_align(2:nrow(dat), 2:ncol(dat), 'center') %>% # Center align the results
+   huxtable::set_valign(1, 1:ncol(dat), 'bottom') %>% # Bottom align the header row
+   huxtable::set_bottom_border(1, 1:ncol(dat), 1) %>% # Put a border under the header row
+   huxtable::set_top_border(1, 1:ncol(dat), 1) %>% # Put a border above the header row
+   huxtable::set_width(1.5) %>% # Set the table width
+   huxtable::set_escape_contents(FALSE) %>% # Don't escape RTF syntax
+   huxtable::set_col_width(c(.4, .15, .15, .15, .15)) # Set the column widths
+
+# Build the RTF document
+doc <- rtf_doc(ht, header_rows=1) %>%
+   # This gets our rows nice and close together - find more info in the docs
+   set_ignore_cell_padding(TRUE) %>% 
+   set_font_size(9) %>% 
+   # Add in a title
+   add_titles(
+      hf_line(paste0("Summary of Treatment-Emergent Adverse Events by Preferred Term in Descending Frequency", 
+                      " of Xanomeline High Dose within System Organ Class"), 
+                     bold=TRUE, align = 'left', font_size = 11),
+      hf_line("Safety Population", bold=TRUE, align = 'left', font_size = 11)
+   ) %>%
+   # Add some footnotes
+   add_footnotes(
+      hf_line(paste0("Abbreviations: N = number of subjects in the population; n=number of patients with at least one row event; ",
+                     "E=number of events. Percentages are calculated relative to the treatment group N."), 
+              bold = TRUE, align='left', font_size = 9),
+      hf_line(paste0("Subjects may be counted in more than one row."), 
+              bold = TRUE, align='left', font_size = 9)
+   )
+
+# Now we can write out the RTF file! 
+write_rtf(doc, file.path("ae_teae.rtf"))
 ```
