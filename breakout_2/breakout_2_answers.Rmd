@@ -16,17 +16,13 @@ library(knitr)
 
 ## Intro
 
-We're going to work with some data from the DM dataset.
+We'll pick up where we left off from the last exercise with the subset DM and AE datasets.
 
 ```{r load_data}
 # Use haven to read the raw data straight off of GitHub!
 raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
 raw_ae <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/ae.xpt"))
-```
 
-We'll pick up where we left off from the last exercise with the subsets on the data.
-
-```{r subset}
 dm <- raw_dm %>% 
   select(USUBJID, STUDYID, SITEID, SUBJID, ARM, AGE, RFSTDTC) %>% 
   filter(RFSTDTC != "")
@@ -65,7 +61,7 @@ ae_cardio_tach <- inner_join(ae_cardiac, ae_tach, by = c('USUBJID', 'AESEQ'))
 Take a look at the output data frame.  Where are the columns from each of the input data frames?  Notice that any variables that are in both but not used in the `by` argument of `inner_join()` will be suffixed with a .x or .y depending on what dataframe it is from.
 
 ## Left Join
-The first type of join we will be doing is a left join.  This keeps the data that is found in the 'left' dataframe and any data from the 'right' data frame that overlaps. 
+The ssecond type of join we will be doing is a left join.  This keeps the data that is found in the 'left' dataframe and any data from the 'right' data frame that overlaps. 
 
 For this example we will combine the dm and ae data frames.  dm will be our 'left' data frame and ae will be our 'right' data frame with the join being done on the USUBJID variable.  The combined dataset can be assigned to the variable dm_ae
 
