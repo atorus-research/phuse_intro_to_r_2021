@@ -16,7 +16,7 @@ library(knitr)
 
 ## Intro
 
-We'll pick up where we left off from the last exercise with the subset DM and AE datasets.
+We'll pick up where we left off from the last exercise with the subset DM and AE data frames  The chunk below will read in the data from the GitHub repository and create the data frames needed for the exercises.
 
 ```{r load_data}
 # Use haven to read the raw data straight off of GitHub!
@@ -41,7 +41,7 @@ ae_tach <- ae %>%
 ```
 
 ## Bind Rows
-The first way we want to combine data is through stacking them.  This is done using `bind_rows()`.  We have proveded both the basic dm data frame but also a data frame called total_dm that contains all the records from dm but the ARM has been changed to Total for use during summaries where a total group is needed.  Let's combine these two datasets using `bind_rows()` and call the new dataset bind_dm
+The first way we want to combine data is through stacking them.  This is done using `bind_rows()`.  We have proveded both the basic dm data frame but also a data frame called total_dm that contains all the records from dm but the ARM has been changed to Total for use during summaries where a total group is needed.  Let's combine these two data frames using `bind_rows()` and call the new data frame bind_dm
 
 ```{r bindrows}
 bind_dm <- bind_rows(dm, total_dm)
@@ -52,7 +52,7 @@ This dataset now contains all observations and variables from the two data frame
 ## Inner Join
 Another way to combine data is by doing a join.  The first type of join we will be doing is an inner join.  This keeps the data that is found only at the intersection of the two data frames.  
 
-We have provided two data frames for this example based off the overall ae data frame.  ae_cardiac is subset on records with an AEBODSYS of 'CARDIAC DISORDERS' and ae_tach is subset on records with an AEDECOD of 'TACHYCARDIA'.  Perform an inner join on these two datasets using the variables USUBJID and AESEQ.  Assign this new data frame to ae_cardio_tach
+We have provided two data frames for this example based off the overall ae data frame.  ae_cardiac is subset on records with an AEBODSYS of 'CARDIAC DISORDERS' and ae_tach is subset on records with an AEDECOD of 'TACHYCARDIA'.  Perform an inner join on these two data frames using the variables USUBJID and AESEQ.  Assign this new data frame to ae_cardio_tach
 
 ```{r innerjoin}
 ae_cardio_tach <- inner_join(ae_cardiac, ae_tach, by = c('USUBJID', 'AESEQ'))
