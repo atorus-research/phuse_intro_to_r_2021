@@ -1,0 +1,85 @@
+---
+title: "Breakout 1: Working With Data Frames"
+subtitle: "PHUSE US Connect 2021: Introduction to R for the Statistical Programmer"
+author: "Atorus Research"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+library(knitr)
+```
+
+## Intro
+
+We're going to work with some data from the DM and AE data frames.  The following chunk will load in the raw data from GitHub!
+
+```{r load_data}
+# Use haven to read the raw data straight off of GitHub!
+raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
+raw_ae <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/ae.xpt"))
+```
+
+## Subsetting Data
+
+Currently, the raw_dm and raw_ae data frames are rather large.  This is fine for keeping all of the data needed, but if we needed to make a display or examine certain data points or subjects we would need to be able to subset this data.  
+
+### Subsetting Variables
+
+As shown in the presentation, the `select()` function is used to both keep and drop variables from a data frame.
+
+Let's start by keeping the following variables from raw_dm: USUBJID, STUDYID, SITEID, SUBJID, ARM, AGE, RFSTDTC.  We will assign this subset data frame to just dm.
+
+```{r keep}
+dm <- raw_dm %>% 
+  select(USUBJID, STUDYID, SITEID, SUBJID, ARM, AGE, RFSTDTC)
+```
+
+This leaves us with a data frame with just the variables we want to look at.  
+
+While this leaves us with the variables we want to keep, what if we wanted to drop one or more variables instead of writing out all the ones we want to keep.  `select()` can do that as well but using `-` before any or all variables we want to drop.
+
+Let's start by subsetting the raw_ae data frame, the code for this is below.
+
+```{r drop_1}
+ae <- raw_ae %>% 
+  select(USUBJID, AETERM, AEBODSYS, AEDECOD, AESTDTC, AEENDTC, AEOUT)
+```
+
+This leaves us with a smaller data frame but what if we actually want to take out a few more variables so we can narrow our focus.  Next, let's say we don't need to keep the outcome variable, so let's drop AEOUT.  We can do this using `select()` with a `-` preceding the variable we don't want to keep.
+
+```{r drop_2}
+ae <- ae %>% 
+  select(-AEOUT)
+```
+
+This leaves us with a much smaller data frame that is easier to read and use in any following operations.
+
+### Subsetting Records
+
+While `select()` lets us subset a data frame to different variables, `filter()` will let us narrow down the records.  Our earlier made dm data frame has a good set of variables in it already but what if we only wanted the patients that had a value for RFSTDTC.
+
+```{r filter}
+dm <- dm %>% 
+  filter(RFSTDTC != "")
+```
+
+This gives us all subjects that have a RFSTDTC value.
+
+## Renaming Variables
+
+While this data already contains the normal variable names, the `rename()` function can be used to rename a variable to a different name.  For this example we can rename the variable USUBJID to SUBJECTUID.
+
+```{r rename}
+dm <- dm %>% 
+  rename(SUBJECTUID = USUBJID)
+```
+
+
+
+
+
