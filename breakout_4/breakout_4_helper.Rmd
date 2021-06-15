@@ -94,7 +94,7 @@ For this assignment:
 ## Using summarize
 dm %>% 
   group_by(___, ___) %>% 
-  summarize(___, .groups='___') %>% 
+  summarize(___, .groups='drop_last') %>% 
   # We're using the `kable()` function to view the data nicely
   kable()
 
