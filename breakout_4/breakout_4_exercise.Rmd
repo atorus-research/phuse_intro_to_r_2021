@@ -1,0 +1,86 @@
+---
+title: "Breakout 4: Summarizing Data"
+subtitle: "PHUSE US Connect 2021: Introduction to R for the Statistical Programmer"
+author: "Mike Stackhouse"
+date: "6/9/2021"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+library(knitr)
+```
+
+## Intro
+
+To get things started with this breakout, let's pick up where we left off from breakout 3!
+
+```{r data_prep} 
+# Use haven to read the raw data straight off of GitHub!
+raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
+
+# Process the raw DM data
+dm <- raw_dm %>%
+  mutate(
+    # Create USUBJID by concatenating STUDYID, SITEID, and SUBJID
+    USUBJID = paste0(STUDYID, "-", SITEID, "-", SUBJID),
+    # Safety Flag is "Y" if ARM is not Screen Failure
+    SAFFL = if_else(ARM != "Screen Failure",
+                    "Y",
+                    "N"),
+    # if/else if/else flow in R
+    AGEGR1 = case_when(
+      AGE < 65 ~ "<65",
+      AGE <= 80 ~ "65-80",
+      AGE > 80 ~ ">80",
+      TRUE ~ NA_character_
+    )
+  )
+
+dm %>% 
+  select(USUBJID, STUDYID, SITEID, SUBJID, ARM, SAFFL, AGE, AGEGR1) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
+```
+
+Now that our data is prepared, we can summarize our data in a few ways. With the `group_by()` function we can specify how we'd like to group our summaries (like any `by` statement in SAS), and the `summarize()` function will control which summaries are performed.
+
+In this breakout, we're going to do two different types of summaries - descriptive statistics and counting. We're going to:
+
+1)  **Summarize** (mean, sd, min, max) the age (AGE) of subjects, across treatment groups (ARM)
+
+2)  **Count** participants age groups (AGEGR1) across treatment groups (ARM)
+
+## Age Summary
+
+Let's start with the Age summary. Age is a numeric variable, and we're going to perform descriptive statistics. For this assignment, do the following:
+
+-   Use the `dm` dataset created above as a starting point
+-   **Group** the data by ARM
+-   **Summarize** the data by creating 4 new variables: `mean`, `sd`, `min,` and `max`
+
+*Remember - every function that you'll need for this workshop can be found in the [function reference](https://atorus-connect.eastus2.cloudapp.azure.com/phuse_intro_to_r_2021/resources.html) section of the workshop website.*
+
+```{r sum_age}
+
+```
+
+## Age Group Counts
+
+Great! We did some descriptive statistics. But what about dealing with categorical data? For this, instead we'll do some counting.
+
+For this assignment:
+
+-   Once again, **group** the data by treatment group (ARM)
+-   **Count** the number of subjects within each age group \*AGEGR1)
+
+*Note: There are multiple ways to solve this one! You'll find with R that quite often, there's multiple ways to solve the same problem. If your organization doesn't have a preferred convention, do what feels most intuitive. And if something feels like it could be more straightforward - it's worth looking into because someone may already made a better approach.*
+
+```{r sum_agegr}
+
+```
