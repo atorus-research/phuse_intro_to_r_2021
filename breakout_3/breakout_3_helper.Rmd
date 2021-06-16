@@ -1,0 +1,132 @@
+---
+title: "Breakout 3: Deriving New Variables"
+author: "Eli Miller"
+date: "6/8/2021"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+library(knitr)
+```
+
+## Intro
+
+We're going to prepare and summarize data from the DM dataset.
+
+```{r load_data}
+# Use haven to read the raw data straight off of GitHub!
+raw_dm <- read_xpt(url("https://github.com/phuse-org/TestDataFactory/raw/main/Updated/TDF_SDTM/dm.xpt"))
+```
+
+To prepare the data we need to do the following:
+
+1)  Update USUBJID to the following pattern.
+
+  ```
+  <STUDYID>-<SITEID>-<SUBJID>
+  ```
+
+2)  Derive the safety population flag (SAFFL) as "N" for the Screen Failures, and "Y" for all others
+
+3)  Derive the age group (AGEGR1) variable using the following groups:
+
+-   \<65
+-   65-80
+-   \>80
+
+## Prepare USUBJID
+
+We already have USUBJID in our data but, we for this example we're going to put it in a new format.
+
+**Use the `mutate()` function from the `{dplyr}` package to update USUBJID in this format:**
+
+    <*STUDYID*>-<*SITEID*>-<*SUBJID*>. 
+
+*Hint: The `paste0` function can be used to concatenate strings.*
+
+```{r prep_usubjid}
+raw_dm %>%
+  mutate(USUBJID = ___) %>% 
+  select(STUDYID, SITEID, SUBJID, USUBJID) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
+```
+
+## Prepare SAFFL
+
+We can use the same `mutate()` function to create the SAFFL variable. SAFFL should be "N" if the participant was a screen failure, and "Y" otherwise.
+
+**Derive SAFFL using the logic described above.**
+
+*Hint: The `if_else()` function can be used in a `mutate()`.*
+
+```{r prep_saffl}
+raw_dm %>%
+  mutate(
+    SAFFL = if_else(___,
+                    "___",
+                    "___")
+  ) %>% 
+  select(USUBJID, ARM, SAFFL) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head(10) %>% 
+  kable()
+```
+
+## Prepare AGEGR1
+
+This is similar to the SAFFL logic except that there are multiple conditions for which we must test. The AGEGR1 variable will group the age of participants into less than 65 (\<65), 65 to 80 (65-80), and greater than 80 (\>80).
+
+**Derive AGEGR1 using the logic described above.**
+
+*Hint: Nesting `if_else` functions would work here - but it would be pretty ugly, The `case_when` function would be more appropriate.*
+
+```{r prep_agegr1}
+raw_dm %>%
+  mutate(
+    AGEGR1 = case_when(
+      ___ ~ "___",
+      ___ <= 80 ~ "___",
+      ___ > 80 ~ "___",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  select(USUBJID, AGE, AGEGR1) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
+```
+
+## All together
+
+We did each variable derivation one by one in the examples above - but `mutate()` can take multiple variable derivations in one call! Tie it all together into one call to `mutate()`.
+
+```{r all}
+dm <- raw_dm %>%
+  mutate(
+    USUBJID = ___,
+    SAFFL = if_else(___,
+                    "___",
+                    "___"),
+    
+    AGEGR1 = case_when(
+      ___ ~ "___",
+      ___ ~ "___",
+      ___ ~ "___",
+      TRUE ~ NA_character_
+    )
+  ) 
+
+# Now that the data are stored in a variable, we'll print to view it
+dm %>% 
+  select(USUBJID, STUDYID, SITEID, SUBJID, ARM, SAFFL, AGE, AGEGR1) %>% 
+  # These calls to `head()` and `kable()` are just to display the data nicely
+  head() %>% 
+  kable()
+```
