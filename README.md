@@ -1,6 +1,6 @@
 # PHUSE US Connect 2021 Intro to R Workshop
 
-Hello and welcome! For all content related to this workshop, check out the workshop website right [here](https://atorus-connect.eastus2.cloudapp.azure.com/phuse_intro_to_r_2021/)
+Hello and welcome! For all content related to this workshop, check out the workshop website right [here](https://atorus-research.github.io/phuse_intro_to_r_2021_website/).
 
 ## What You'll Learn
 In this workshop, statistical programmers will be introduced to the R programming language and the tidyverse, using familiar clinical examples. Attendees will leave with a basic understanding of what R is, what the tidyverse is and why it’s important, and what the open-source landscape has to offer us in the world of clinical statistical programming.
