@@ -9,12 +9,19 @@ Hands-on programming examples will be offered to give attendees some basic knowl
 
 ## Schedule 
 
-| Concept | Time | 
-| --- | --- |
-| 🎬 Getting Started | |
-| 📓 Basics | |
-| ☕ BREAK |
-| 💻 Programming Methods | |
-| ☕ BREAK |
-| 📦 How Can Packages Help? | |
-| 🌐 Where to go from Here | |
+| Today's Schedule |
+| --- | 
+| 🎬 Getting Started | 
+| 📓 R Basics | 
+| 📈 Working with Data Frames |
+| 💻 Translating Keep, Drop, Where, & Rename | 
+| ⌨️ Breakout 1 |
+| 💻 Translating Set & Merge | 
+| ⌨️ Breakout 2 |
+| 💻  Mutate | 
+| ⌨️ Breakout 3 |
+| 💻  Translating PROC MEAN, PROC FREQ, PROC UNIVARIATE | 
+| ⌨️ Breakout 4 |
+| 🌐 Where to go from Here | 
+
+
